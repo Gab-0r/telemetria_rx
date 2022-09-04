@@ -19,7 +19,10 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(telemetria_rx telemetria_rx.c )
+add_executable(telemetria_rx telemetria_rx.c sd_manager.c hw_config.c)
+
+add_subdirectory(lib/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI)
+add_subdirectory(lib/pico-nrf24/lib/nrf24l01)
 
 pico_set_program_name(telemetria_rx "telemetria_rx")
 pico_set_program_version(telemetria_rx "0.1")
@@ -28,7 +31,7 @@ pico_enable_stdio_uart(telemetria_rx 0)
 pico_enable_stdio_usb(telemetria_rx 1)
 
 # Add the standard library to the build
-target_link_libraries(telemetria_rx pico_stdlib)
+target_link_libraries(telemetria_rx pico_stdlib FatFs_SPI nrf24_driver)
 
 pico_add_extra_outputs(telemetria_rx)
 
