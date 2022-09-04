@@ -31,7 +31,7 @@ pico_enable_stdio_uart(telemetria_rx 0)
 pico_enable_stdio_usb(telemetria_rx 1)
 
 # Add the standard library to the build
-target_link_libraries(telemetria_rx pico_stdlib FatFs_SPI nrf24_driver)
+target_link_libraries(telemetria_rx pico_stdlib FatFs_SPI nrf24_driver hardware_gpio)
 
 pico_add_extra_outputs(telemetria_rx)
 
