@@ -146,6 +146,24 @@ int main()
                 // receiving a one byte uint8_t payload on DATA_PIPE_0
                 printf("\nPacket received:- Payload: %d,%d,%d,%d,%d,%d,%d,%d,%d on data pipe (%d)\n", payload_zero.acelX, payload_zero.acelY, payload_zero.acelZ, payload_zero.gyroX, payload_zero.gyroY, payload_zero.gyroZ,
                 payload_zero.magX, payload_zero.magY, payload_zero.magZ, pipe_number);
+
+                //Escribir los datos recibidos en la SD
+                //Escribiendo datos del acelerometro
+                sprintf(str, "%d,%d,%d\n", payload_zero.acelX, payload_zero.acelY, payload_zero.acelZ);
+                sd_writefile(ret, &fil_acel, str);
+
+                //Escribiendo datos del giroscopio
+                sprintf(str, "%d,%d,%d\n", payload_zero.gyroX, payload_zero.gyroY, payload_zero.gyroZ);
+                sd_writefile(ret, &fil_gyro, str);
+
+                //Escribiendo datos del magnetometro
+                sprintf(str, "%d,%d,%d\n", payload_zero.magX, payload_zero.magY, payload_zero.magZ);
+                sd_writefile(ret, &fil_magnet, str);
+
+                //Escribiendo angulos
+                sprintf(str, "%d,%d\n", payload_two.angle1, payload_two.angle2);
+                sd_writefile(ret, &fil_angles, str);
+
                 break;
                 
                 case DATA_PIPE_1:
@@ -178,25 +196,9 @@ int main()
             }
         }
 
-        //Escribiendo datos del acelerometro
-        // sprintf(str, "Escribiendo en el archivo del acelerometro\n");
-        // sd_writefile(ret, &fil_acel, str);
-
-        // //Escribiendo datos del giroscopio
-        // sprintf(str, "Escribiendo en el archivo del giroscopio\n");
-        // sd_writefile(ret, &fil_gyro, str);
-
-        // //Escribiendo datos del magnetometro
-        // sprintf(str, "Escribiendo en el archivo del magnetometro\n");
-        // sd_writefile(ret, &fil_magnet, str);
-
-        // //Escribiendo angulos
-        // sprintf(str, "Escribiendo en el archivo de los angulos\n");
-        // sd_writefile(ret, &fil_angles, str);
-
-        // if(gpio_get(interruptPin) == 1){ //Haciendo polling al botón de parar de guardar los datos (PENDIENTE POR INTERRUPCION)
-        //     sys_stop();
-        // }
+        if(gpio_get(interruptPin) == 1){ //Haciendo polling al botón de parar de guardar los datos (PENDIENTE POR INTERRUPCION)
+            sys_stop();
+        }
 
         sleep_ms(50);
     }
