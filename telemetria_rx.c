@@ -13,12 +13,14 @@ FIL fil_acel;
 FIL fil_gyro;
 FIL fil_magnet;
 FIL fil_angles;
+FIL fil_wind;
 int ret;
 char buf[100];
 char filename[] = "acelData.txt";
 char filename2[] = "gyroData.txt";
 char filename3[] = "magnetData.txt";
 char filename4[] = "anglesData.txt";
+char filename5[] = "windData.txt";
 char str[100];
 
 //Funciones
@@ -113,8 +115,8 @@ int main()
     // holds payload_one sent by the transmitter
     // payload sent to receiver data pipe 1
     typedef struct payload_one_s {
-        int16_t windSpeed;
         int16_t windDir; 
+        int16_t windSpeed;
     } payload_one_t;
 
     // two byte struct sent by transmitter
@@ -133,6 +135,7 @@ int main()
     sd_openfileW(fr, &fil_gyro, filename2);
     sd_openfileW(fr, &fil_magnet, filename3);
     sd_openfileW(fr, &fil_angles, filename4);
+    sd_openfileW(fr, &fil_wind, filename5);
 
     while(1){
         if (my_nrf.is_packet(&pipe_number))
@@ -144,8 +147,8 @@ int main()
                 my_nrf.read_packet(&payload_zero, sizeof(payload_zero));
 
                 // receiving a one byte uint8_t payload on DATA_PIPE_0
-                printf("\nPacket received:- Payload: %d,%d,%d,%d,%d,%d,%d,%d,%d on data pipe (%d)\n", payload_zero.acelX, payload_zero.acelY, payload_zero.acelZ, payload_zero.gyroX, payload_zero.gyroY, payload_zero.gyroZ,
-                payload_zero.magX, payload_zero.magY, payload_zero.magZ, pipe_number);
+                //printf("\nPacket received:- Payload: %d,%d,%d,%d,%d,%d,%d,%d,%d on data pipe (%d)\n", payload_zero.acelX, payload_zero.acelY, payload_zero.acelZ, payload_zero.gyroX, payload_zero.gyroY, payload_zero.gyroZ,
+                //payload_zero.magX, payload_zero.magY, payload_zero.magZ, pipe_number);
 
                 //Escribir los datos recibidos en la SD
                 //Escribiendo datos del acelerometro
@@ -160,10 +163,6 @@ int main()
                 sprintf(str, "%d,%d,%d\n", payload_zero.magX, payload_zero.magY, payload_zero.magZ);
                 sd_writefile(ret, &fil_magnet, str);
 
-                //Escribiendo angulos
-                sprintf(str, "%d,%d\n", payload_two.angle1, payload_two.angle2);
-                sd_writefile(ret, &fil_angles, str);
-
                 break;
                 
                 case DATA_PIPE_1:
@@ -171,15 +170,21 @@ int main()
                 my_nrf.read_packet(&payload_one, sizeof(payload_one));
 
                 // receiving a five byte string payload on DATA_PIPE_1
-                printf("\nPacket received:- Payload: %d,%d,%d,%d on data pipe (%d)\n", payload_one.windSpeed, payload_one.windDir, pipe_number);
+                //printf("\nPacket received:- Payload: %d,%d on data pipe (%d)\n", payload_one.windDir, payload_one.windSpeed, pipe_number);
+                printf("%d\n", payload_one.windDir);
+                sprintf(str, "%d,%d\n", payload_one.windDir, payload_one.windSpeed);
+                sd_writefile(ret, &fil_wind, str);
                 break;
-                
+
                 case DATA_PIPE_2:
                 // read payload
                 my_nrf.read_packet(&payload_two, sizeof(payload_two));
 
                 // receiving a two byte struct payload on DATA_PIPE_2
-                printf("\nPacket received:- Payload %d,%d on data pipe (%d)\n", payload_two.angle1, payload_two.angle2, pipe_number);
+                //printf("\nPacket received:- Payload %d,%d on data pipe (%d)\n", payload_two.angle1, payload_two.angle2, pipe_number);
+                //Escribiendo angulos
+                sprintf(str, "%d,%d\n", payload_two.angle1, payload_two.angle2);
+                sd_writefile(ret, &fil_angles, str);
                 break;
                 
                 case DATA_PIPE_3:
@@ -220,6 +225,7 @@ void sys_stop(void){
     sd_closefile(fr, &fil_gyro);
     sd_closefile(fr, &fil_magnet);
     sd_closefile(fr, &fil_angles);
+    sd_closefile(fr, &fil_wind);
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
     printf("Datos escritos");
     while (1);
