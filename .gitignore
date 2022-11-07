@@ -1,1 +1,6 @@
 /build
+graph/acelData.txt
+graph/anglesData.txt
+graph/gyroData.txt
+graph/magnetData.txt
+graph/windData.txt

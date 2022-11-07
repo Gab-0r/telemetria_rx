@@ -116,7 +116,7 @@ int main()
     // payload sent to receiver data pipe 1
     typedef struct payload_one_s {
         int16_t windDir; 
-        int16_t windSpeed;
+        float windSpeed;
     } payload_one_t;
 
     // two byte struct sent by transmitter
@@ -205,7 +205,7 @@ int main()
             sys_stop();
         }
 
-        sleep_ms(50);
+        sleep_ms(10);
     }
 }
 
