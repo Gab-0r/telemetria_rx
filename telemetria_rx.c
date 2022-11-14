@@ -109,12 +109,12 @@ int main()
     };
   
     typedef struct payload2Receive_s{
-        uint8_t request;
-        uint8_t Acel[3];
-        uint8_t Gyro[3];
-        uint8_t Magneto[3];
-        uint8_t WindDir;
-        uint8_t WindSpeed;
+        bool request;
+        int16_t Acel[3];
+        int16_t Gyro[3];
+        int16_t Magneto[3];
+        int16_t WindDir;
+        float WindSpeed;
     } payload2Receive_t;
 
     payload2Receive_t payload2Receive;
@@ -143,7 +143,7 @@ int main()
                     my_nrf.read_packet(&payload2Receive, sizeof(payload2Receive));
 
                     // receiving a two byte struct payload on DATA_PIPE_2
-                    printf("\nPacket received:- Payload %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d on data pipe (%d)\n", payload2Receive.request,
+                    printf("\nPacket received:- Payload %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %f on data pipe (%d)\n", payload2Receive.request,
                     payload2Receive.Acel[0], payload2Receive.Acel[1], payload2Receive.Acel[2], payload2Receive.Gyro[0], payload2Receive.Gyro[1], payload2Receive.Gyro[2],
                     payload2Receive.Magneto[0], payload2Receive.Magneto[1], payload2Receive.Magneto[2], payload2Receive.WindDir, payload2Receive.WindSpeed, pipe_number);
                     //Escribiendo angulos
