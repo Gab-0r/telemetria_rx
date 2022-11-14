@@ -133,6 +133,7 @@ int main()
     fn_status_t success = 0;
 
     while(1){
+        my_nrf.receiver_mode();
         if (my_nrf.is_packet(&pipe_number))
         {
             switch (pipe_number)
@@ -152,7 +153,7 @@ int main()
                     my_nrf.standby_mode();
                     printf("Preparando para enviar control\r\n");
 
-                    while(true){
+                    //while(true){
                         my_nrf.tx_destination((uint8_t[]){0x37,0x37,0x37,0x37,0x37});
 
                         // time packet was sent
@@ -175,7 +176,7 @@ int main()
                         }
                     
                         sleep_ms(200);
-                    }
+                    //}
                 break;
                 
                 case DATA_PIPE_1:
