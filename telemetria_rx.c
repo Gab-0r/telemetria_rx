@@ -96,39 +96,28 @@ int main()
     // data pipe number a packet was received on
     uint8_t pipe_number = 0;
 
-    // holds payload_zero sent by the transmitter
-    typedef struct payload_zero_s {
-        uint8_t tagAcel;
-        int16_t acelX;
-        int16_t acelY;
-        int16_t acelZ;
-        uint8_t tagGyro;
-        int16_t gyroX;
-        int16_t gyroY;
-        int16_t gyroZ;
-        uint8_t tagMag;
-        int16_t magX;
-        int16_t magY;
-        int16_t magZ;
-    } payload_zero_t;
+    typedef struct payload2Send_s{
+        uint8_t velaDegree;
+        bool right;
+        bool left; 
+    } payload2Send_t;
 
-    // holds payload_one sent by the transmitter
-    // payload sent to receiver data pipe 1
-    typedef struct payload_one_s {
-        int16_t windDir; 
-        int16_t windSpeed;
-    } payload_one_t;
+    payload2Send_t payload2Send = {
+        .velaDegree = 1,
+        .right = 0,
+        .left = 1
+    };
+  
+    typedef struct payload2Receive_s{
+        uint8_t request;
+        uint8_t Acel[3];
+        uint8_t Gyro[3];
+        uint8_t Magneto[3];
+        uint8_t WindDir;
+        uint8_t WindSpeed;
+    } payload2Receive_t;
 
-    // two byte struct sent by transmitter
-    typedef struct payload_two_s { int16_t angle1; int16_t angle2; } payload_two_t;
-
-
-    payload_zero_t payload_zero;
-
-    payload_one_t payload_one;
-
-    // holds payload_two struct sent by the transmitter
-    payload_two_t payload_two;
+    payload2Receive_t payload2Receive;
 
     //Archivos donde se guardaran los datos
     sd_openfileW(fr, &fil_acel, filename);
@@ -137,54 +126,62 @@ int main()
     sd_openfileW(fr, &fil_angles, filename4);
     sd_openfileW(fr, &fil_wind, filename5);
 
+    uint64_t time_sent = 0; // time packet was sent
+    uint64_t time_reply = 0; // response time after packet sent
+
+    // result of packet transmission
+    fn_status_t success = 0;
+
     while(1){
         if (my_nrf.is_packet(&pipe_number))
         {
             switch (pipe_number)
             {
                 case DATA_PIPE_0:
-                // read payload
-                my_nrf.read_packet(&payload_zero, sizeof(payload_zero));
+                    // read payload
+                    my_nrf.read_packet(&payload2Receive, sizeof(payload2Receive));
 
-                // receiving a one byte uint8_t payload on DATA_PIPE_0
-                //printf("\nPacket received:- Payload: %d,%d,%d,%d,%d,%d,%d,%d,%d on data pipe (%d)\n", payload_zero.acelX, payload_zero.acelY, payload_zero.acelZ, payload_zero.gyroX, payload_zero.gyroY, payload_zero.gyroZ,
-                //payload_zero.magX, payload_zero.magY, payload_zero.magZ, pipe_number);
+                    // receiving a two byte struct payload on DATA_PIPE_2
+                    printf("\nPacket received:- Payload %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d on data pipe (%d)\n", payload2Receive.request,
+                    payload2Receive.Acel[0], payload2Receive.Acel[1], payload2Receive.Acel[2], payload2Receive.Gyro[0], payload2Receive.Gyro[1], payload2Receive.Gyro[2],
+                    payload2Receive.Magneto[0], payload2Receive.Magneto[1], payload2Receive.Magneto[2], payload2Receive.WindDir, payload2Receive.WindSpeed, pipe_number);
+                    //Escribiendo angulos
+                    //sprintf(str, "%d,%d\n", payload_two.angle2);
+                    //sd_writefile(ret, &fil_angles, str);
+                    
+                    my_nrf.standby_mode();
+                    printf("Preparando para enviar control\r\n");
 
-                //Escribir los datos recibidos en la SD
-                //Escribiendo datos del acelerometro
-                sprintf(str, "%d,%d,%d\n", payload_zero.acelX, payload_zero.acelY, payload_zero.acelZ);
-                sd_writefile(ret, &fil_acel, str);
+                    while(true){
+                        my_nrf.tx_destination((uint8_t[]){0x37,0x37,0x37,0x37,0x37});
 
-                //Escribiendo datos del giroscopio
-                sprintf(str, "%d,%d,%d\n", payload_zero.gyroX, payload_zero.gyroY, payload_zero.gyroZ);
-                sd_writefile(ret, &fil_gyro, str);
+                        // time packet was sent
+                        time_sent = to_us_since_boot(get_absolute_time()); // time sent
 
-                //Escribiendo datos del magnetometro
-                sprintf(str, "%d,%d,%d\n", payload_zero.magX, payload_zero.magY, payload_zero.magZ);
-                sd_writefile(ret, &fil_magnet, str);
+                        // send packet to receiver's DATA_PIPE_0 address
+                        success = my_nrf.send_packet(&payload2Send, sizeof(payload2Send));
+                        
+                        // time auto-acknowledge was received
+                        time_reply = to_us_since_boot(get_absolute_time()); // response time
 
+                        if (success)
+                        {
+                            printf("\nPacket sent:- Response: %lluμS | Payload: %d, %d, %d\n",time_reply - time_sent, payload2Send.velaDegree,
+                                payload2Send.right, payload2Send.left);
+
+                        }
+                        else{
+                            printf("\nPacket not sent:- Receiver not available.\n");
+                        }
+                    
+                        sleep_ms(200);
+                    }
                 break;
                 
                 case DATA_PIPE_1:
-                // read payload
-                my_nrf.read_packet(&payload_one, sizeof(payload_one));
-
-                // receiving a five byte string payload on DATA_PIPE_1
-                //printf("\nPacket received:- Payload: %d,%d on data pipe (%d)\n", payload_one.windDir, payload_one.windSpeed, pipe_number);
-                printf("%d\n", payload_one.windDir);
-                sprintf(str, "%d,%d\n", payload_one.windDir, payload_one.windSpeed);
-                sd_writefile(ret, &fil_wind, str);
                 break;
 
                 case DATA_PIPE_2:
-                // read payload
-                my_nrf.read_packet(&payload_two, sizeof(payload_two));
-
-                // receiving a two byte struct payload on DATA_PIPE_2
-                //printf("\nPacket received:- Payload %d,%d on data pipe (%d)\n", payload_two.angle1, payload_two.angle2, pipe_number);
-                //Escribiendo angulos
-                sprintf(str, "%d,%d\n", payload_two.angle1, payload_two.angle2);
-                sd_writefile(ret, &fil_angles, str);
                 break;
                 
                 case DATA_PIPE_3:
@@ -200,6 +197,10 @@ int main()
                 break;
             }
         }
+
+
+        
+
 
         if(gpio_get(interruptPin) == 1){ //Haciendo polling al botón de parar de guardar los datos (PENDIENTE POR INTERRUPCION)
             sys_stop();
