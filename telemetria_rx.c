@@ -207,7 +207,7 @@ int main()
             sys_stop();
         }
 
-        sleep_ms(50);
+        sleep_ms(10);
     }
 }
 
