@@ -132,6 +132,8 @@ int main()
     // result of packet transmission
     fn_status_t success = 0;
 
+    //gpio_put(PICO_DEFAULT_LED_PIN, 1);
+
     while(1){
         my_nrf.receiver_mode();
         if (my_nrf.is_packet(&pipe_number))
@@ -143,15 +145,15 @@ int main()
                     my_nrf.read_packet(&payload2Receive, sizeof(payload2Receive));
 
                     // receiving a two byte struct payload on DATA_PIPE_2
-                    printf("\nPacket received:- Payload %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %f on data pipe (%d)\n", payload2Receive.request,
-                    payload2Receive.Acel[0], payload2Receive.Acel[1], payload2Receive.Acel[2], payload2Receive.Gyro[0], payload2Receive.Gyro[1], payload2Receive.Gyro[2],
-                    payload2Receive.Magneto[0], payload2Receive.Magneto[1], payload2Receive.Magneto[2], payload2Receive.WindDir, payload2Receive.WindSpeed, pipe_number);
+                    //printf("\nPacket received:- Payload %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %f on data pipe (%d)\n", payload2Receive.request,
+                    //payload2Receive.Acel[0], payload2Receive.Acel[1], payload2Receive.Acel[2], payload2Receive.Gyro[0], payload2Receive.Gyro[1], payload2Receive.Gyro[2],
+                    //payload2Receive.Magneto[0], payload2Receive.Magneto[1], payload2Receive.Magneto[2], payload2Receive.WindDir, payload2Receive.WindSpeed, pipe_number);
                     //Escribiendo angulos
                     //sprintf(str, "%d,%d\n", payload_two.angle2);
                     //sd_writefile(ret, &fil_angles, str);
                     
                     my_nrf.standby_mode();
-                    printf("Preparando para enviar control\r\n");
+                    //printf("Preparando para enviar control\r\n");
 
                     //while(true){
                         my_nrf.tx_destination((uint8_t[]){0x37,0x37,0x37,0x37,0x37});
@@ -167,47 +169,50 @@ int main()
 
                         if (success)
                         {
-                            printf("\nPacket sent:- Response: %lluμS | Payload: %d, %d, %d\n",time_reply - time_sent, payload2Send.velaDegree,
-                                payload2Send.right, payload2Send.left);
+                            //printf("\nPacket sent:- Response: %lluμS | Payload: %d, %d, %d\n",time_reply - time_sent, payload2Send.velaDegree,
+                                //payload2Send.right, payload2Send.left);
 
                         }
                         else{
-                            printf("\nPacket not sent:- Receiver not available.\n");
+                            //printf("\nPacket not sent:- Receiver not available.\n");
+                        }
+
+                        //Comprobando si el request es de telemetria
+                        if(payload2Receive.request){
+                            //Escribir los datos recibidos en la SD
+                            //Escribiendo datos del acelerometro
+                            sprintf(str, "%d,%d,%d\n", payload2Receive.Acel[0], payload2Receive.Acel[1], payload2Receive.Acel[2]);
+                            sd_writefile(ret, &fil_acel, str);
+
+                            //Escribiendo datos del giroscopio
+                            sprintf(str, "%d,%d,%d\n", payload2Receive.Gyro[0], payload2Receive.Gyro[1], payload2Receive.Gyro[2]);
+                            sd_writefile(ret, &fil_gyro, str);
+
+                            //Escribiendo datos del magnetometro
+                            sprintf(str, "%d,%d,%d\n", payload2Receive.Magneto[0], payload2Receive.Magneto[1], payload2Receive.Magneto[2]);
+                            sd_writefile(ret, &fil_magnet, str);
+
+                            //Escribiendo datos del sensor de viento
+                            sprintf(str, "%d,%d\n", payload2Receive.WindDir, payload2Receive.WindSpeed);
+                            sd_writefile(ret, &fil_wind, str);
                         }
                     
-                        sleep_ms(200);
+                        //sleep_ms(200);
                     //}
-                break;
-                
-                case DATA_PIPE_1:
-                break;
-
-                case DATA_PIPE_2:
-                break;
-                
-                case DATA_PIPE_3:
-                break;
-                
-                case DATA_PIPE_4:
-                break;
-                
-                case DATA_PIPE_5:
                 break;
                 
                 default:
                 break;
             }
         }
-
-
         
-
-
+        
         if(gpio_get(interruptPin) == 1){ //Haciendo polling al botón de parar de guardar los datos (PENDIENTE POR INTERRUPCION)
             sys_stop();
         }
+        
 
-        sleep_ms(10);
+        //sleep_ms(80);
     }
 }
 
@@ -228,7 +233,7 @@ void sys_stop(void){
     sd_closefile(fr, &fil_magnet);
     sd_closefile(fr, &fil_angles);
     sd_closefile(fr, &fil_wind);
-    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+    //gpio_put(PICO_DEFAULT_LED_PIN, 1);
     printf("Datos escritos");
     while (1);
 }
