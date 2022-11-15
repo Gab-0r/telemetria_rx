@@ -5,6 +5,7 @@
 #include "sd_manager.h"
 #include "nrf24_driver.h"
 #include "hardware/gpio.h"
+#include "hardware/adc.h"
 
 //Variables para la SD
 FRESULT fr;
@@ -28,7 +29,24 @@ void sys_init(void);
 void sys_stop(void);
 
 //Pines
-const uint interruptPin = 22;
+//const uint interruptPin = 22;
+
+//Para controlar el servo2
+bool rightButton = false;
+bool leftButton = false;
+const int rightPin = 22;
+const int leftPin = 15;
+float grados2 = 90;
+
+//Para control de servo1
+const int velaPin = 28;
+uint16_t potenciometro;
+float grados1;
+
+//Factor de converion del adc
+const float conversion_factor = 3.3f / (1 << 12);
+
+bool right, left;
 
 int main()
 {
@@ -97,16 +115,10 @@ int main()
     uint8_t pipe_number = 0;
 
     typedef struct payload2Send_s{
-        uint8_t velaDegree;
+        uint16_t velaDegree;
         bool right;
         bool left; 
     } payload2Send_t;
-
-    payload2Send_t payload2Send = {
-        .velaDegree = 1,
-        .right = 0,
-        .left = 1
-    };
   
     typedef struct payload2Receive_s{
         bool request;
@@ -136,6 +148,8 @@ int main()
 
     while(1){
         my_nrf.receiver_mode();
+        right = 0;
+        left = 0;
         if (my_nrf.is_packet(&pipe_number))
         {
             switch (pipe_number)
@@ -156,6 +170,23 @@ int main()
                     //printf("Preparando para enviar control\r\n");
 
                     //while(true){
+
+                        if(gpio_get(rightPin)){
+                            right = 1;
+                        }
+                        if(gpio_get(leftPin)){
+                            left = 1;
+                        }
+
+                        potenciometro = adc_read();
+                        grados1 = (potenciometro * conversion_factor) * (64);
+                        
+                        payload2Send_t payload2Send = {
+                            .velaDegree = grados1,
+                            .right = right,
+                            .left = left
+                        };
+
                         my_nrf.tx_destination((uint8_t[]){0x37,0x37,0x37,0x37,0x37});
 
                         // time packet was sent
@@ -169,12 +200,12 @@ int main()
 
                         if (success)
                         {
-                            //printf("\nPacket sent:- Response: %lluμS | Payload: %d, %d, %d\n",time_reply - time_sent, payload2Send.velaDegree,
-                                //payload2Send.right, payload2Send.left);
+                            printf("\nPacket sent:- Response: %lluμS | Payload: %d, %d, %d\n",time_reply - time_sent, payload2Send.velaDegree,
+                                payload2Send.right, payload2Send.left);
 
                         }
                         else{
-                            //printf("\nPacket not sent:- Receiver not available.\n");
+                            printf("\nPacket not sent:- Receiver not available.\n");
                         }
 
                         //Comprobando si el request es de telemetria
@@ -206,20 +237,31 @@ int main()
             }
         }
         
-        
+        /*
         if(gpio_get(interruptPin) == 1){ //Haciendo polling al botón de parar de guardar los datos (PENDIENTE POR INTERRUPCION)
             sys_stop();
         }
-        
+        */
 
         //sleep_ms(80);
     }
 }
 
 void sys_init(void){
+    adc_init();
     stdio_init_all();
-    gpio_init(interruptPin);
-    gpio_set_dir(interruptPin, GPIO_IN);
+    //gpio_init(interruptPin);
+    //gpio_set_dir(interruptPin, GPIO_IN);
+
+    //Potenciometro
+    adc_gpio_init(velaPin);
+    adc_select_input(2);
+
+    //Pulsadores
+    gpio_init(rightPin);
+    gpio_init(leftPin);
+    gpio_set_dir(rightPin, GPIO_IN);
+    gpio_set_dir(leftPin, GPIO_IN); 
 
     sleep_ms(6000);
     //Inicializar todo el apartado de la SD
